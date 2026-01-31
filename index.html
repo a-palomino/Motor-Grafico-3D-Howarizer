@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/p5.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/addons/p5.sound.min.js"></script>
+    <script src="scripts/normalCalculus.js"></script>
+    <script src="scripts/objParser.js"></script>
+    <script src="scripts/poligons.js"></script>
+    
+    
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="utf-8" />
+
+  </head>
+  <body>
+    <main>
+      <span name="custom">Sube un modelo .obj</span>
+      <input type="file" name="custom"/><br />
+      <select name="poligonType" id="poligonType">Selecciona un modelo
+        <option value="CUBE" selected>Cube</option>
+        <option value="PIRAMID">Piramid</option>
+        <option value="OSO">Oso</option>
+        <option value="CUSTOM">Tu Objeto</option>
+      </select>
+      <button id="culling">Activar Face-Culling</button>
+      <button id="face">Enumerar Caras</button>
+    </main>
+    <script src="sketch.js"></script>
+  </body>
+</html>
