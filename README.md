@@ -1,11 +1,14 @@
 # Motor-Grafico-3D-Howarizer
 A tiny 3D Models visualizer using the p5js canvas.
 
-Currently you can visualize a wireframe mode from the main objects published: Cube, Piramid and a little Bear. Also it includes this features:
+Currently you can visualize a wireframe mode from the main objects published: Cube, Piramid and a little Bear. It also includes this features:
 
 -Upload your custom .obj and select the Custom option to watch it.
--Activate/Deactiva back-face culling option.
+-Activate/Deactivate back-face culling option.
 -Show the face number (it's sorted every execution to draw first the last ones) and draw the normal vector.
+-Hand Tracking gestures: Scale the object with your left hand and activate/deactivate the vertex mode with your right hand
+
+
 
 In the next versions I'll focus to improve the performance and include the next features:
 -Draw the faces with solid colors/textures.

@@ -4,6 +4,7 @@ let file_src = "files/Origami_Panda.obj";
 let fileInput;
 let culling = false;
 let faceNormalbool = false;
+let poligonMode = true; //Draws the wireframe/faces instead of vertex
 
 //let x = 0;
 //let y = 0;
@@ -23,8 +24,27 @@ let poligonSelected = "CUBE";
 let obj_vs = [];
 let obj_fs = [];
 
+//Handtracking
+var handpose = null;
+var hands = [];
+
+let indexFingerPosX, indexFingerPosY;
+
+//Video
+let video;
+let posCamaraX,posCamaraY;
+
+function getHands(result){
+  hands = result;
+}
+
+function preload(){
+  handpose = ml5.handPose({flipped: true});
+}
+
 
 function setup() {
+  
   createCanvas(800, 800);
   //Charge bear obj
   loadLocalFile();
@@ -45,11 +65,24 @@ function setup() {
     event.preventDefault();
     poligonSelected = event.target.value;
   });
+
+
+  //Hand Tracking
+  video = createCapture(VIDEO);
+  video.size(1280,720); //Your webcam res
+  video.hide();
+
+  posCamaraX = 0;
+  posCamaraY = 0;
+
+  //Start hand tracking
+  handpose.detectStart(video, getHands);
 }
 
 function draw() {
   //frameRate(60);
-
+  clearScreen();
+  handTrackingFrame();
   frame();
   textSize(32);
   stroke(0, 255, 0);
@@ -57,20 +90,20 @@ function draw() {
 }
 
 function frame() {
-  const dt = 1 / 120;
+  const dt = 1 / 60;
   //console.log(`Delta time: ${deltaTime} -- DT: ${dt} -- FPS: ${frameRate()}`);
   //dz += 1*dt;
   angle += (PI / 3) * dt;
   //scaleF = scaleF < 5 ? scaleF+0.1: 1;
-  clearScreen();
+  
+  if(poligonMode){
+    drawPoligon(poligonSelected);
+  }else{
+    drawSelectedVertexModel(poligonSelected);
+  }
+  
 
-  //Iterate vertex points
-  /*for(const v of vs){
-    drawPoint(screen(project(translate_z(rotate_xz(v,angle),dz))));
-  }*/
-
-  //Iterate faces
-  drawPoligon(poligonSelected);
+  
 }
 
 //Clean the screen
@@ -78,12 +111,9 @@ function clearScreen() {
   background(0, 0, 0);
 }
 
-//Draw a point
-function drawPoint({ x, y }) {
-  const size = 25;
-  fill(0, 255, 0);
-  rect(x - size / 2, y - size / 2, size, size);
-}
+
+
+
 
 //Draw a line
 function drawLine(p1, p2) {

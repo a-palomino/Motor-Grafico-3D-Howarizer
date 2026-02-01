@@ -40,6 +40,27 @@ const fs = [
 let osoFs = [];
 let osoVs = [];
 
+//Call the function to draw the vertex from selected object
+function drawSelectedVertexModel(poligon_selection){
+  switch (poligon_selection) {
+    case "CUBE":
+      drawVertex(vs);
+      break;
+    case "PIRAMID":
+      drawVertex(pirVs);
+      break;
+    case "OSO":
+      drawVertex(osoVs);
+      break;
+    case "CUSTOM":
+      drawVertex(obj_vs);
+      break;
+    default:
+      drawVertex(vs);
+      break;
+  }
+}
+
 //Call the function to draw the selected poligon
 function drawPoligon(poligon_selection) {
   switch (poligon_selection) {
@@ -61,11 +82,25 @@ function drawPoligon(poligon_selection) {
   }
 }
 
+function drawVertex(vs){
+  //Iterate vertex points
+  for(const v of vs){
+    drawPoint(screen(project(translate_z(rotate_xz(scaleModel(v),angle),dz))));
+  }
+}
+
+//Draw a point
+function drawPoint({ x, y }) {
+  const size = 5;
+  fill(0, 255, 0);
+  rect(x - size / 2, y - size / 2, size, size);
+}
+
 function drawFaces(fs, vs) {
   let iterator = 0;
   //Transform vertices
   const transformedVs = vs.map(v =>
-    translate_z(rotate_xz(v, angle), dz)                          
+    translate_z(rotate_xz(scaleModel(v), angle), dz)                          
   );
   //Sort faces using z-sort method
   const sortedFaces = [...fs].sort((f1,f2) => {
@@ -111,4 +146,13 @@ function calculateMediaZ(face, vs) {
   }
 
   return media / face.length;
+}
+
+
+function scaleModel(p){
+  return {
+    x: p.x * scaleF,
+    y: p.y * scaleF,
+    z: p.z * scaleF,
+  }
 }
