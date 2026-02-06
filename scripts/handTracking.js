@@ -11,10 +11,10 @@ function handTrackingFrame() {
     //Draw hands
     //Draw the tracked hands
     if (hands.length > 0) {
-        console.log("Mano deteccion - Mano derecha: " + rightHandIsShowed);
+        //console.log("Mano deteccion - Mano derecha: " + rightHandIsShowed);
         rightHandIsShowed = false;
         for (let handIndex of hands) {
-            console.log("Entramos bucle: " + handIndex.handedness);
+            //console.log("Entramos bucle: " + handIndex.handedness);
             if (handIndex.confidence > 0.1) {
                 // Loop through keypoints and draw circles
                 for (let i = 0; i < handIndex.keypoints.length; i++) {
@@ -36,7 +36,7 @@ function handTrackingFrame() {
             }
         }
     } else {
-        console.log(rightHandIsShowed);
+        //console.log(rightHandIsShowed);
         if (rightHandIsShowed) {
             rightHandIsShowed = false;
         } 

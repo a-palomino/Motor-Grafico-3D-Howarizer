@@ -2,7 +2,7 @@
 
 let file_src = "files/Origami_Panda.obj";
 let fileInput;
-let culling = false;
+let culling = true;
 let faceNormalbool = false;
 let poligonMode = true; //Draws the wireframe/faces instead of vertex
 
@@ -19,6 +19,12 @@ const poligonType = Object.freeze({
   CUSTOM: "CUSTOM"
 }); 
 let poligonSelected = "CUBE";
+
+//Zbuffer
+let zBuffer;
+
+//Directional Lighting
+let lightDir = vectorNormalize({x: 0.3, y: 0.6, z: -1});
 
 //Objects loads
 let obj_vs = [];
@@ -77,6 +83,9 @@ function setup() {
 
   //Start hand tracking
   handpose.detectStart(video, getHands);
+
+  //init Zbuffer
+  initZbuffer();
 }
 
 function draw() {
@@ -90,6 +99,7 @@ function draw() {
 }
 
 function frame() {
+  clearZbuffer();
   const dt = 1 / 60;
   //console.log(`Delta time: ${deltaTime} -- DT: ${dt} -- FPS: ${frameRate()}`);
   //dz += 1*dt;
@@ -98,6 +108,7 @@ function frame() {
   
   if(poligonMode){
     drawPoligon(poligonSelected);
+    drawWireframePoligon(poligonSelected);
   }else{
     drawSelectedVertexModel(poligonSelected);
   }
@@ -123,11 +134,12 @@ function drawLine(p1, p2) {
 }
 
 //Normalize the coordinates to make the center of the canvas the 0,0 coord.
-function screen(p) {
+function screenPoint(p) {
   //Translate form -1..1 => 0..2 => to 0..w/h our actual canvas coord system
   return {
     x: ((p.x + 1) / 2) * width,
     y: (1 - (p.y + 1) / 2) * height,
+    z: p.z
   };
 }
 
@@ -137,6 +149,7 @@ function project({ x, y, z }) {
   return {
     x: x / z,
     y: y / z,
+    z: z
   };
 }
 
@@ -158,12 +171,12 @@ function rotate_xz({ x, y, z }, angle) {
   };
 }
 
-//Back-Face Culling - ESTUDIAR Y ACABAR DE IMPLEMENTAR
+//Back-Face Culling
 function vectorsSubstract(a, b) {
   return {
-    x: a.x - b.x,
-    y: a.y - b.y,
-    z: a.z - b.z,
+    x: b.x - a.x,
+    y: b.y - a.y,
+    z: b.z - a.z,
   };
 }
 
@@ -176,13 +189,17 @@ function vectorCrossProduct(a, b) {
   };
 }
 
+function matrixDeterminant(a,b){
+  return a.x*b.y - b.x*a.y;
+}
+
 function vectorDotProduct(a, b) {
   return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
 function isFaceVisible(a, b, c) {
-  const ab = vectorsSubstract(b, a);
-  const ac = vectorsSubstract(c, a);
+  const ab = vectorsSubstract(a,b);
+  const ac = vectorsSubstract(a,c);
   const normalFace = vectorCrossProduct(ab, ac);
 
   // Cámara en (0,0,0), mirando a +Z
@@ -196,4 +213,16 @@ function isFaceVisible(a, b, c) {
 }
 
 
+/**
+ * Function to calculate the lamber Intensity
+ */
+function lambertIntensity(a,b,c){
+  const ab = vectorsSubstract(a,b);
+  const ac = vectorsSubstract(a,c);
+  const normalFace = vectorNormalize(vectorCrossProduct(ab, ac));
+  let lightDotProd = vectorDotProduct(normalFace,lightDir);
+  let lambIntesity =  Math.max(0,lightDotProd);
+  return lambIntesity;
+
+}
 

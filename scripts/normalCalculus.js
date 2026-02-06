@@ -76,10 +76,10 @@ function drawNormal(face,vs,dz,angle,numFace){
   const p2 = project(translate_z(endNormal,dz));*/
   
   if(!p1 || !p2) return;
-  drawLine(screen(p1),screen(p2));
+  drawLine(screenPoint(p1),screenPoint(p2));
   stroke(0,255,0);
   textSize(25);
-  text(numFace,screen(p1).x,screen(p1).y);
+  text(numFace,screenPoint(p1).x,screenPoint(p1).y);
   
 }
 

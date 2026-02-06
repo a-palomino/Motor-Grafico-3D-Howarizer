@@ -14,6 +14,7 @@ function loadFile(){
     obj_vs = obj_vf.aux_vs;
     normalizeOBJ(obj_vs);
     obj_fs = obj_vf.aux_fs;
+    customTriangulateFS = triangulateFaces(obj_fs);
     
     console.log("Vertices:", obj_vs);
     console.log("Faces:", obj_fs);
@@ -34,6 +35,7 @@ async function loadLocalFile(){
   osoVs = obj_vf.aux_vs;
   normalizeOBJ(osoVs);
   osoFs = obj_vf.aux_fs;
+  osoTriangulateFS = triangulateFaces(osoFs);
     
   console.log("Vertices:", obj_vs);
   console.log("Faces:", obj_fs);
@@ -82,3 +84,4 @@ function normalizeOBJ(vs){
     v.z /= max;
   }
 }
+
