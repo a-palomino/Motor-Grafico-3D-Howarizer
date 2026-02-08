@@ -93,7 +93,7 @@ function drawPoligon(poligon_selection) {
   }
 }
 
-function drawWireframePoligon(poligon_selection){
+function drawWireframePoligon(poligon_selection) {
   switch (poligon_selection) {
     case "CUBE":
       drawWireframe(fs, vs); //If z-sorting then remove triangulateFaces and pass fs instead
@@ -145,7 +145,7 @@ function drawWireframe(fs, vs) {
     iterator++;
 
 
-    
+
     if (culling) {
       if (f.length < 3) continue;
 
@@ -178,69 +178,50 @@ function drawFaces(fs, vs) {
   //Transform vertices
   const transformedVs = vs.map(v =>
     translate_z(rotate_xz(scaleModel(v), angle), dz)
-    //translate_z(scaleModel(v), dz)
   );
+
   //Sort faces using z-sort method
   const sortedFaces = [...fs].sort((f1, f2) => {
     return calculateMediaZ(f2, transformedVs) - calculateMediaZ(f1, transformedVs);
   });
+
+  // Load pixels ONCE at the start
+  loadPixels();
+
   for (const f of sortedFaces) {
     if (faceNormalbool) {
-      drawNormal(f, vs, dz, angle, iterator);
+      //drawNormal(f, vs, dz, angle, iterator);
     }
-
+    if (f.length < 3) continue;
     iterator++;
     //Miramos que esta cara este compuesto de menos de 3 vectores
     const vecA = transformedVs[f[0]];
     const vecB = transformedVs[f[1]];
     const vecC = transformedVs[f[2]];
 
-    console.log("VEC A: ");
-    console.log(vecA);
-    console.log("VEC B: ");
-    console.log(vecB);
-    console.log("VEC C: ");
-    console.log(vecC);
-    if (culling) {
-      if (f.length < 3) continue;
 
-      //Comprobamos que esta cara se pueda dibujar por su normal
+    if (isFaceVisible(vecA, vecB, vecC)) continue;
 
 
-
-      if (isFaceVisible(vecA, vecB, vecC)) continue;
-    }
-
-    //Z-sorting method
-    /*for (let i = 0; i < f.length; i++) {
-      const a = transformedVs[f[i]];
-      const b = transformedVs[f[(i + 1) % f.length]]; //We're modularing so if we get a i > f.length the we convert it again to the start index
-      const prj_a = project(a);
-      const prj_b = project(b);
-      if (prj_a && prj_b) {
-        drawLine(screen(prj_a), screen(prj_b));
-      }
-    }*/
 
     //Zbuffer method
     //Lambert ilumination
     const intensity = lambertIntensity(vecA, vecB, vecC);
-    console.log("Intensidad Lambert: " + intensity)
     const prj_a = screenPoint(project(vecA));
     const prj_b = screenPoint(project(vecB));
     const prj_c = screenPoint(project(vecC));
 
     if (!prj_a || !prj_b || !prj_c) continue;
-
     const col = {
       r: 255 * intensity,
       g: 150 * intensity,
       b: 80 * intensity
     };
-    console.log("Col:");
-    console.log(col);
-    drawTriangle(prj_a, prj_b, prj_c, vecA.z, vecB.z, vecC.z, col);
+    rasterizeTriangle(prj_a, prj_b, prj_c, vecA.z, vecB.z, vecC.z, col);
   }
+
+  // Update pixels ONCE at the end
+  updatePixels();
 }
 
 /**Z-SORTING**/
@@ -265,14 +246,22 @@ function scaleModel(p) {
 
 
 //Those functions are dedicated to the next step ->Triangulation + Z-buffer + Lambert Ilumination + Directional light + Flat shading
+function triangulateFace(face) {
+  const tris = [];
+
+  for (let i = 1; i < face.length - 1; i++) {
+    tris.push([face[0], face[i], face[i + 1]]);
+  }
+
+  return tris;
+}
 
 function triangulateFaces(faces) {
   const tris = [];
 
   for (const f of faces) {
-    for (let i = 0; i < f.length - 1; i++) {
-      tris.push([f[0], f[i], f[i + 1]]);
-    }
+    if (f.length < 3) continue;
+    tris.push(...triangulateFace(f));
   }
 
   return tris;
@@ -287,65 +276,64 @@ function clearZbuffer() {
 
 
 //Rasterization
-function drawTriangle(p0, p1, p2, z0, z1, z2, col) {
-  let AB = vectorsSubstract(p0, p1);
-  let AC = vectorsSubstract(p0, p2);
-  let CA = vectorsSubstract(p2, p0);
-  let BC = vectorsSubstract(p1, p2);
-  console.log("Area:");
-  let area = matrixDeterminant(AB, AC);
-  console.log(area);
-  if (area === 0) return; //If it's a not well formed triangle don't raster anything 
+function rasterizeTriangle(p0, p1, p2, z0, z1, z2, col) {
+  // Validate that all points have valid coordinates
+  if (!isFinite(p0.x) || !isFinite(p0.y) || !isFinite(p1.x) || !isFinite(p1.y) || !isFinite(p2.x) || !isFinite(p2.y)) {
+    return;
+  }
+
+  
+
+  let AB = vectorsSubstract(p1, p0);
+  let AC = vectorsSubstract(p2, p0);
+
+  const area =
+    (p1.x - p0.x) * (p2.y - p0.y) -
+    (p2.x - p0.x) * (p1.y - p0.y);
+
+  // Skip degenerate triangles
+  if (Math.abs(area) < 0.001) return;
+
   //Calculate the Min and Max píxel coord for this triangle
+  const minX = Math.max(0, Math.floor(Math.min(p0.x, p1.x, p2.x)));
+  const maxX = Math.min(width - 1, Math.ceil(Math.max(p0.x, p1.x, p2.x)));
+  const minY = Math.max(0, Math.floor(Math.min(p0.y, p1.y, p2.y)));
+  const maxY = Math.min(height - 1, Math.ceil(Math.max(p0.y, p1.y, p2.y)));
 
-  let maxX = Math.min(width - 1, Math.ceil(Math.max(p0.x, p1.x, p2.x)));
-  let minX = Math.max(0, Math.floor(Math.min(p0.x, p1.x, p2.x)));
-  let maxY = Math.min(width - 1, Math.ceil(Math.max(p0.y, p1.y, p2.y)));
-  let minY = Math.max(0, Math.floor(Math.min(p0.y, p1.y, p2.y)));
+  // Skip if triangle is completely outside canvas
+  if (minX > maxX || minY > maxY) return;
 
-  loadPixels();
   //Now iterate for every pixel
-  for (let y = minY; y < maxY; y++) {
-    for (let x = minX; x < maxX; x++) {
-      //Calculate the baricentric coordinates for every pixel as point P
-      let AP = {
-        x: x - p0.x,
-        y: y - p0.y
-      };
-      let BP = {
-        x: x - p1.x,
-        y: y - p1.y
-      };
-      let CP = {
-        x: x - p2.x,
-        y: y - p2.y
-      };
-      //We really calculate the area of subtriangles (AB to AP, BC to BP and AC to CP) and divide for total area triangle to verify it relevance
-      const w0 = matrixDeterminant(AB, AP) / area;
-      const w1 = matrixDeterminant(BC, BP) / area;
-      const w2 = matrixDeterminant(CA, CP) / area;
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
+      const P = { x: x - p0.x, y: y - p0.y };
+      const w0 = (AB.x * P.y - AB.y * P.x) / area;
+      const w1 = ((p2.x - p1.x) * (y - p1.y) - (p2.y - p1.y) * (x - p1.x)) / area;
+      const w2 = 1 - w0 - w1;
 
-      //If this baricentric coordinates are greater than 0 then it mean that P point it's inside of the triangle
-      if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
-        let z = w0 * z2 * + w1 * z0 + w2 * z1; //Z lineal interpolation 
+      //If this barycentric coordinates are greater than 0 then it mean that P point it's inside of the triangle
+      if(w0 >= -0.001 && w1 >= -0.001 && w2 >= -0.001) {
+        const z = w0 * z0 + w1 * z1 + w2 * z2;
+
+        //Z lineal interpolation 
         const idx = x + y * width;
 
-        //If this pixel is beyond of the previos drawed
-        if (z < zBuffer[idx]) {
-          zBuffer[idx] = z;
+        // Validate index bounds
+        if (idx >= 0 && idx < zBuffer.length) {
+          //If this pixel is beyond of the previos drawed
+          if (z < zBuffer[idx]) {
+            zBuffer[idx] = z;
 
-          const i = idx * 4;
-          pixels[i] = col.r;
-          pixels[i + 1] = col.g;
-          pixels[i + 2] = col.b;
-          pixels[i + 3] = 255;
-
+            const i = idx * 4;
+            pixels[i] = col.r;
+            pixels[i + 1] = col.g;
+            pixels[i + 2] = col.b;
+            pixels[i + 3] = 255;
+          }
         }
       }
     }
   }
-
-  updatePixels();
 }
 
 
@@ -360,5 +348,25 @@ function vectorNormalize(v) {
     x: v.x / vLenght,
     y: v.y / vLenght,
     z: v.z / vLenght
+  }
+}
+
+function centerModel(vs) {
+  let vx = 0, vy = 0, vz = 0;
+
+  for (const v of vs) {
+    vx += v.x;
+    vy += v.y;
+    vz += v.z;
+  }
+
+  vx /= vs.length;
+  vy /= vs.length;
+  vz /= vs.length;
+
+  for (const v of vs) {
+    v.x -= vx;
+    v.y -= vy;
+    v.z -= vz;
   }
 }

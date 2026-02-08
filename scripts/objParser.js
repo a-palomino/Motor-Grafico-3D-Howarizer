@@ -13,6 +13,7 @@ function loadFile(){
     
     obj_vs = obj_vf.aux_vs;
     normalizeOBJ(obj_vs);
+    centerModel(obj_vs);
     obj_fs = obj_vf.aux_fs;
     customTriangulateFS = triangulateFaces(obj_fs);
     
@@ -34,6 +35,7 @@ async function loadLocalFile(){
     
   osoVs = obj_vf.aux_vs;
   normalizeOBJ(osoVs);
+  centerModel(osoVs);
   osoFs = obj_vf.aux_fs;
   osoTriangulateFS = triangulateFaces(osoFs);
     

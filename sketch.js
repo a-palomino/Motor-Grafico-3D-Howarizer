@@ -21,7 +21,7 @@ const poligonType = Object.freeze({
 let poligonSelected = "CUBE";
 
 //Zbuffer
-let zBuffer;
+zBuffer = null; // Will be initialized in setup()
 
 //Directional Lighting
 let lightDir = vectorNormalize({x: 0.3, y: 0.6, z: -1});
@@ -84,6 +84,10 @@ function setup() {
   //Start hand tracking
   handpose.detectStart(video, getHands);
 
+  //Center models
+  centerModel(vs);
+  centerModel(pirVs);
+
   //init Zbuffer
   initZbuffer();
 }
@@ -108,7 +112,7 @@ function frame() {
   
   if(poligonMode){
     drawPoligon(poligonSelected);
-    drawWireframePoligon(poligonSelected);
+    //drawWireframePoligon(poligonSelected);
   }else{
     drawSelectedVertexModel(poligonSelected);
   }
@@ -134,11 +138,19 @@ function drawLine(p1, p2) {
 }
 
 //Normalize the coordinates to make the center of the canvas the 0,0 coord.
-function screenPoint(p) {
+/*function screenPoint(p) {
   //Translate form -1..1 => 0..2 => to 0..w/h our actual canvas coord system
   return {
     x: ((p.x + 1) / 2) * width,
     y: (1 - (p.y + 1) / 2) * height,
+    z: p.z
+  };
+}*/
+function screenPoint(p) {
+  //Translate form -1..1 => 0..2 => to 0..w/h our actual canvas coord system
+  return {
+    x: width / 2 + p.x * width / 2,
+    y: height / 2 - p.y * height / 2,
     z: p.z
   };
 }
@@ -174,9 +186,9 @@ function rotate_xz({ x, y, z }, angle) {
 //Back-Face Culling
 function vectorsSubstract(a, b) {
   return {
-    x: b.x - a.x,
-    y: b.y - a.y,
-    z: b.z - a.z,
+    x: a.x - b.x,
+    y: a.y - b.y,
+    z: a.z - b.z,
   };
 }
 
@@ -198,8 +210,8 @@ function vectorDotProduct(a, b) {
 }
 
 function isFaceVisible(a, b, c) {
-  const ab = vectorsSubstract(a,b);
-  const ac = vectorsSubstract(a,c);
+  const ab = vectorsSubstract(b,a);
+  const ac = vectorsSubstract(c,a);
   const normalFace = vectorCrossProduct(ab, ac);
 
   // Cámara en (0,0,0), mirando a +Z
@@ -217,8 +229,8 @@ function isFaceVisible(a, b, c) {
  * Function to calculate the lamber Intensity
  */
 function lambertIntensity(a,b,c){
-  const ab = vectorsSubstract(a,b);
-  const ac = vectorsSubstract(a,c);
+  const ab = vectorsSubstract(b,a);
+  const ac = vectorsSubstract(c,a);
   const normalFace = vectorNormalize(vectorCrossProduct(ab, ac));
   let lightDotProd = vectorDotProduct(normalFace,lightDir);
   let lambIntesity =  Math.max(0,lightDotProd);
