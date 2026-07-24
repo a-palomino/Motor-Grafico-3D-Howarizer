@@ -190,7 +190,7 @@ function drawFaces(fs, vs) {
 
   for (const f of sortedFaces) {
     if (faceNormalbool) {
-      //drawNormal(f, vs, dz, angle, iterator);
+      drawNormal(f, vs, dz, angle, iterator);
     }
     if (f.length < 3) continue;
     iterator++;
@@ -207,6 +207,7 @@ function drawFaces(fs, vs) {
     //Zbuffer method
     //Lambert ilumination
     const intensity = lambertIntensity(vecA, vecB, vecC);
+    //const intensity = 1;
     const prj_a = screenPoint(project(vecA));
     const prj_b = screenPoint(project(vecB));
     const prj_c = screenPoint(project(vecC));
@@ -282,7 +283,7 @@ function rasterizeTriangle(p0, p1, p2, z0, z1, z2, col) {
     return;
   }
 
-  
+
 
   let AB = vectorsSubstract(p1, p0);
   let AC = vectorsSubstract(p2, p0);
@@ -307,13 +308,22 @@ function rasterizeTriangle(p0, p1, p2, z0, z1, z2, col) {
   for (let y = minY; y <= maxY; y++) {
     for (let x = minX; x <= maxX; x++) {
       const P = { x: x - p0.x, y: y - p0.y };
+      //const p = { x: x + 0.5, y: y + 0.5 };
       const w0 = (AB.x * P.y - AB.y * P.x) / area;
       const w1 = ((p2.x - p1.x) * (y - p1.y) - (p2.y - p1.y) * (x - p1.x)) / area;
       const w2 = 1 - w0 - w1;
+      /*const area = edge(p0, p1, p2);
+
+      const w0 = edge(p1, p2, p) / area;
+      const w1 = edge(p2, p0, p) / area;
+      const w2 = edge(p0, p1, p) / area;*/
 
       //If this barycentric coordinates are greater than 0 then it mean that P point it's inside of the triangle
-      if(w0 >= -0.001 && w1 >= -0.001 && w2 >= -0.001) {
-        const z = w0 * z0 + w1 * z1 + w2 * z2;
+      //
+      if (
+        w0 >= -0.001 && w1 >= -0.001 && w2 >= -0.001
+      ) {
+        const z = (w0 * z0 + w1 * z1 + w2 * z2);
 
         //Z lineal interpolation 
         const idx = x + y * width;
@@ -336,7 +346,10 @@ function rasterizeTriangle(p0, p1, p2, z0, z1, z2, col) {
   }
 }
 
-
+function edge(a, b, c) {
+  return (b.x - a.x) * (c.y - a.y) -
+    (b.y - a.y) * (c.x - a.x);
+}
 
 
 function vectorNormalize(v) {

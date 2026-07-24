@@ -5,6 +5,8 @@ let fileInput;
 let culling = true;
 let faceNormalbool = false;
 let poligonMode = true; //Draws the wireframe/faces instead of vertex
+let wireframeMode = false;
+let handTrackingMode = false;
 
 //let x = 0;
 //let y = 0;
@@ -17,14 +19,14 @@ const poligonType = Object.freeze({
   CUBE: "CUBE",
   PIRAMID: "PIRAMID",
   CUSTOM: "CUSTOM"
-}); 
+});
 let poligonSelected = "CUBE";
 
 //Zbuffer
 zBuffer = null; // Will be initialized in setup()
 
 //Directional Lighting
-let lightDir = vectorNormalize({x: 0.3, y: 0.6, z: -1});
+let lightDir = vectorNormalize({ x: 0.3, y: 0.6, z: -1 });
 
 //Objects loads
 let obj_vs = [];
@@ -38,44 +40,53 @@ let indexFingerPosX, indexFingerPosY;
 
 //Video
 let video;
-let posCamaraX,posCamaraY;
+let posCamaraX, posCamaraY;
 
-function getHands(result){
+function getHands(result) {
   hands = result;
 }
 
-function preload(){
-  handpose = ml5.handPose({flipped: true});
+function preload() {
+  handpose = ml5.handPose({ flipped: true });
 }
 
 
 function setup() {
-  
+  frameRate(120);
   createCanvas(800, 800);
   //Charge bear obj
   loadLocalFile();
-  
+
   fileInput = document.querySelector("input[type=file]");
   fileInput.addEventListener("change", loadFile);
   let buttonCulling = document.getElementById("culling");
   let buttonFaceNormal = document.getElementById("face");
   let selectPoligon = document.getElementById("poligonType");
-  
+  let buttonWireframe = document.getElementById("wireframe");
+  let buttonHandTrackingMode = document.getElementById("handTracking");
+
   buttonCulling.addEventListener("click", () => {
     culling = !culling ? true : false;
   });
   buttonFaceNormal.addEventListener("click", () => {
     faceNormalbool = !faceNormalbool ? true : false;
   });
-  selectPoligon.addEventListener("change",(event)=>{
+  buttonWireframe.addEventListener("click", () => {
+    wireframeMode = !wireframeMode ? true : false;
+  });
+  buttonHandTrackingMode.addEventListener("click", () => {
+    handTrackingMode = !handTrackingMode ? true : false;
+  });
+  selectPoligon.addEventListener("change", (event) => {
     event.preventDefault();
     poligonSelected = event.target.value;
   });
 
 
+
   //Hand Tracking
   video = createCapture(VIDEO);
-  video.size(1280,720); //Your webcam res
+  video.size(1280, 720); //Your webcam res
   video.hide();
 
   posCamaraX = 0;
@@ -95,7 +106,7 @@ function setup() {
 function draw() {
   //frameRate(60);
   clearScreen();
-  handTrackingFrame();
+  if (handTrackingMode) handTrackingFrame();
   frame();
   textSize(32);
   stroke(0, 255, 0);
@@ -109,16 +120,18 @@ function frame() {
   //dz += 1*dt;
   angle += (PI / 3) * dt;
   //scaleF = scaleF < 5 ? scaleF+0.1: 1;
-  
-  if(poligonMode){
+
+  if (poligonMode) {
     drawPoligon(poligonSelected);
-    //drawWireframePoligon(poligonSelected);
-  }else{
+    if (wireframeMode) {
+      drawWireframePoligon(poligonSelected);
+    }
+  } else {
     drawSelectedVertexModel(poligonSelected);
   }
-  
 
-  
+
+
 }
 
 //Clean the screen
@@ -201,8 +214,8 @@ function vectorCrossProduct(a, b) {
   };
 }
 
-function matrixDeterminant(a,b){
-  return a.x*b.y - b.x*a.y;
+function matrixDeterminant(a, b) {
+  return a.x * b.y - b.x * a.y;
 }
 
 function vectorDotProduct(a, b) {
@@ -210,8 +223,8 @@ function vectorDotProduct(a, b) {
 }
 
 function isFaceVisible(a, b, c) {
-  const ab = vectorsSubstract(b,a);
-  const ac = vectorsSubstract(c,a);
+  const ab = vectorsSubstract(b, a);
+  const ac = vectorsSubstract(c, a);
   const normalFace = vectorCrossProduct(ab, ac);
 
   // Cámara en (0,0,0), mirando a +Z
@@ -228,13 +241,33 @@ function isFaceVisible(a, b, c) {
 /**
  * Function to calculate the lamber Intensity
  */
-function lambertIntensity(a,b,c){
-  const ab = vectorsSubstract(b,a);
-  const ac = vectorsSubstract(c,a);
+function lambertIntensity(a, b, c) {
+  const ab = vectorsSubstract(b, a);
+  const ac = vectorsSubstract(c, a);
   const normalFace = vectorNormalize(vectorCrossProduct(ab, ac));
-  let lightDotProd = vectorDotProduct(normalFace,lightDir);
-  let lambIntesity =  Math.max(0,lightDotProd);
+  let lightDotProd = vectorDotProduct(normalFace, lightDir);
+  let lambIntesity = Math.max(0, lightDotProd);
   return lambIntesity;
+
+  /*const ab = vectorsSubstract(b, a);
+  const ac = vectorsSubstract(c, a);
+
+  let normalFace = vectorNormalize(vectorCrossProduct(ab, ac));
+
+  const view = {
+    x: -a.x,
+    y: -a.y,
+    z: -a.z
+  };
+
+  // Si la normal mira hacia atrás, la invertimos
+  if (vectorDotProduct(normalFace, view) < 0) {
+    normalFace.x *= -1;
+    normalFace.y *= -1;
+    normalFace.z *= -1;
+  }
+
+  return Math.max(0, vectorDotProduct(normalFace, lightDir));*/
 
 }
 
